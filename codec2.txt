@@ -1,0 +1,48 @@
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
+from xgboost import XGBClassifier
+from sklearn.metrics import classification_report, accuracy_score
+
+# Load dataset
+url = "https://raw.githubusercontent.com/blastchar/telco-churn/master/WA_Fn-UseC_-Telco-Customer-Churn.csv"
+df = pd.read_csv(url)
+
+# Drop customerID and handle missing values
+df.drop('customerID', axis=1, inplace=True)
+df['TotalCharges'] = pd.to_numeric(df['TotalCharges'], errors='coerce')
+df.dropna(inplace=True)
+
+# Encode categorical variables
+le = LabelEncoder()
+for column in df.select_dtypes(include='object').columns:
+    df[column] = le.fit_transform(df[column])
+
+# Features and target
+X = df.drop('Churn', axis=1)
+y = df['Churn']
+
+# Train-test split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Feature scaling
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+
+# Models
+models = {
+    "Logistic Regression": LogisticRegression(),
+    "Random Forest": RandomForestClassifier(),
+    "XGBoost": XGBClassifier(use_label_encoder=False, eval_metric='logloss')
+}
+
+# Train and evaluate
+for name, model in models.items():
+    model.fit(X_train, y_train)
+    preds = model.predict(X_test)
+    print(f"\n {name} Results:")
+    print(classification_report(y_test, preds))
+    print("Accuracy:", accuracy_score(y_test, preds))
